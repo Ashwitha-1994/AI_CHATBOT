@@ -37,7 +37,126 @@ st.set_page_config(
     page_icon="🤖",
     layout="wide"
 )
+# ---------------- Custom Website Style ----------------
 
+st.markdown(
+    """
+    <style>
+
+    /* Main Background */
+    .stApp {
+        background: linear-gradient(
+            135deg,
+            #667eea 0%,
+            #764ba2 100%
+        );
+    }
+
+
+    /* Main container */
+    .block-container {
+
+        background: rgba(255,255,255,0.95);
+
+        border-radius:20px;
+
+        padding:30px;
+
+        margin-top:20px;
+
+    }
+
+
+    /* Title */
+
+    h1 {
+
+        color:#4b0082;
+
+        text-align:center;
+
+        font-size:45px;
+
+    }
+
+
+    /* Subtitle */
+
+    .stCaption {
+
+        text-align:center;
+
+        font-size:18px;
+
+    }
+
+
+    /* Chat messages */
+
+    [data-testid="stChatMessage"] {
+
+        background:white;
+
+        border-radius:15px;
+
+        padding:10px;
+
+        margin:10px;
+
+        box-shadow:
+        0px 4px 15px rgba(0,0,0,0.15);
+
+    }
+
+
+    /* Sidebar */
+
+    section[data-testid="stSidebar"] {
+
+        background:
+        linear-gradient(
+        180deg,
+        #1f1c2c,
+        #928dab
+        );
+
+    }
+
+
+    section[data-testid="stSidebar"] * {
+
+        color:white;
+
+    }
+
+
+    /* Buttons */
+
+    button {
+
+        border-radius:20px !important;
+
+        background:#667eea !important;
+
+        color:white !important;
+
+    }
+
+
+    /* Input box */
+
+    textarea {
+
+        border-radius:15px !important;
+
+    }
+
+
+    </style>
+
+    """,
+    unsafe_allow_html=True
+)
 
 # ---------------- Sidebar ----------------
 
