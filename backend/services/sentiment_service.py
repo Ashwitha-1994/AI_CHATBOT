@@ -1,32 +1,20 @@
 from transformers import pipeline
 
 
-classifier = None
+print("Loading Sentiment Model...")
+
+sentiment_model = pipeline(
+    "sentiment-analysis",
+    model="distilbert-base-uncased-finetuned-sst-2-english"
+)
 
 
-def get_sentiment_model():
-
-    global classifier
-
-    if classifier is None:
-
-        print("Loading Sentiment Model...")
-
-        classifier = pipeline(
-            "sentiment-analysis"
-        )
-
-        print("Sentiment Model Loaded")
-
-    return classifier
-
+print("Sentiment Model Loaded")
 
 
 def analyze_sentiment(text):
 
-    model = get_sentiment_model()
-
-    result = model(text)[0]
+    result = sentiment_model(text)[0]
 
     return {
         "label": result["label"],

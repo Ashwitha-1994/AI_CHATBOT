@@ -3,13 +3,31 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 MONGO_URI = os.getenv("MONGO_URI")
-DATABASE_NAME = os.getenv("DATABASE_NAME")
 
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+DATABASE_NAME = os.getenv(
+    "DATABASE_NAME",
+    "chatbot_db"
+)
 
-MODEL_NAME = os.getenv("MODEL_NAME")
+OPENROUTER_API_KEY = os.getenv(
+    "OPENROUTER_API_KEY"
+)
 
-TEMPERATURE = float(os.getenv("TEMPERATURE", "0.7"))
+MODEL_NAME = os.getenv(
+    "MODEL_NAME",
+    "openrouter/free"
+)
 
-MAX_TOKENS = int(os.getenv("MAX_TOKENS", "500"))
+TEMPERATURE = float(
+    os.getenv("TEMPERATURE", 0.5)
+)
+
+MAX_TOKENS = int(
+    os.getenv("MAX_TOKENS", 1500)
+)
+
+
+print("Mongo URI Loaded:")
+print(MONGO_URI)
