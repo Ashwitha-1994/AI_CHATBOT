@@ -1,14 +1,35 @@
-import requests
 import streamlit as st
 from streamlit_mic_recorder import mic_recorder
+import uuid
+import os
 
-API_URL = "https://ai-chatbot-backend-ccem.onrender.com"
+
+from backend.services.whisper_service import speech_to_text
+from backend.services.llm_service import generate_response
+from backend.services.sentiment_service import analyze_sentiment
+
+from backend.services.conversation_service import (
+    get_conversation_history,
+    save_message
+)
+
+from backend.services.memory_service import (
+    get_memory,
+    save_memory
+)
+
+from backend.services.summary_service import summarize_conversation
+from backend.services.prompt_builder import build_prompt
+
+
+# ---------------- Page Config ----------------
 
 st.set_page_config(
     page_title="AI Chatbot",
     page_icon="🤖",
     layout="wide"
 )
+
 
 # ---------------- Sidebar ----------------
 
@@ -19,176 +40,271 @@ user_id = st.sidebar.text_input(
     value="1009"
 )
 
-try:
-    health = requests.get(
-        API_URL,
-        timeout=10
-    )
 
-    if health.status_code == 200:
-        st.sidebar.success("Backend Connected ✅")
-    else:
-        st.sidebar.error("Backend Error")
+st.sidebar.success("Streamlit App Running ✅")
 
-except Exception:
-    st.sidebar.error("Backend Offline")
-
-st.sidebar.write(API_URL)
-st.sidebar.markdown("---")
 
 st.sidebar.info("""
 ### Features
 
 ✅ Memory
 
-✅ Sentiment
-
-✅ Intent Detection
+✅ Sentiment Analysis
 
 ✅ Voice Input
 
-✅ FastAPI
+✅ Whisper Speech Recognition
 
-✅ MongoDB
+✅ OpenRouter LLM
+
+✅ MongoDB Atlas
+
 """)
+
 
 # ---------------- Title ----------------
 
 st.title("🤖 AI Chatbot")
-st.caption("FastAPI + MongoDB + Whisper + Memory + Intent Detection")
 
-# ---------------- Session State ----------------
+st.caption(
+    "Streamlit + Whisper + MongoDB + Memory + OpenRouter"
+)
+
+
+# ---------------- Session ----------------
+
 
 if "messages" not in st.session_state:
+
     st.session_state.messages = []
 
+
 if "voice_key" not in st.session_state:
+
     st.session_state.voice_key = 0
 
-# ---------------- Display Chat ----------------
+
+
+# ---------------- Display Messages ----------------
+
 
 for msg in st.session_state.messages:
 
     with st.chat_message(msg["role"]):
+
         st.markdown(msg["content"])
 
-# ======================================================
-# Voice Input
-# ======================================================
+
+
+# =====================================================
+# CHAT FUNCTION
+# =====================================================
+
+def process_chat(message):
+
+
+    # Memory
+
+    memory = get_memory(user_id)
+
+
+    # History
+
+    history = get_conversation_history(user_id)
+
+
+    # Sentiment
+
+    sentiment = analyze_sentiment(message)
+
+
+
+    # Prompt
+
+    prompt = build_prompt(
+        memory,
+        history,
+        message,
+        sentiment,
+        False
+    )
+
+
+    # LLM
+
+    response = generate_response(prompt)
+
+
+
+    if response is None:
+
+        response = "Sorry, I could not answer."
+
+
+
+    # Save conversation
+
+
+    save_message(
+        user_id,
+        "user",
+        message
+    )
+
+
+    save_message(
+        user_id,
+        "assistant",
+        response
+    )
+
+
+
+    return response
+
+
+
+
+# =====================================================
+# VOICE INPUT
+# =====================================================
+
 
 st.divider()
+
 st.subheader("🎤 Voice Chat")
 
+
 audio = mic_recorder(
+
     start_prompt="🎤 Start Recording",
+
     stop_prompt="⏹ Stop Recording",
+
     key=f"mic_{st.session_state.voice_key}"
+
 )
+
+
 
 if audio:
 
+
     st.success("Voice Recorded")
 
-    files = {
-        "audio": (
-            "voice.wav",
-            audio["bytes"],
-            "audio/wav"
-        )
-    }
+
+    filename = f"temp_{uuid.uuid4()}.wav"
+
+
+    with open(filename,"wb") as f:
+
+        f.write(audio["bytes"])
+
+
 
     try:
 
-        voice_response = requests.post(
-          f"{API_URL}/voice",
-          files=files,
-          timeout=120
+
+        text = speech_to_text(filename)
+
+
+
+        st.info(
+            f"🎤 You said: {text}"
         )
 
-        if voice_response.status_code == 200:
-
-            recognized_text = voice_response.json()["recognized_text"]
-
-            st.info(f"🎤 You said: {recognized_text}")
-
-            st.session_state.messages.append(
-                {
-                    "role": "user",
-                    "content": recognized_text
-                }
-            )
-
-            chat_response = requests.post(
-              f"{API_URL}/chat",
-              json={
-              "user_id": user_id,
-              "message": recognized_text
-              },
-               timeout=120
-            ) 
-
-            if chat_response.status_code == 200:
-
-                data = chat_response.json()
-
-                st.session_state.messages.append(
-                    {
-                        "role": "assistant",
-                        "content": data["response"]
-                    }
-                )
-
-                st.session_state.voice_key += 1
-
-                st.rerun()
-
-            else:
-                st.error(chat_response.text)
-
-        else:
-            st.error("Voice API Error")
-
-    except Exception as e:
-        st.error(str(e))
-
-# ======================================================
-# Text Input
-# ======================================================
-
-prompt = st.chat_input("Ask me anything...")
-
-if prompt:
-
-    st.session_state.messages.append(
-        {
-            "role": "user",
-            "content": prompt
-        }
-    )
-
-    response = requests.post(
-      f"{API_URL}/chat",
-      json={
-        "user_id": user_id,
-        "message": prompt
-      },
-      timeout=120
-    )
-
-    if response.status_code == 200:
-
-        data = response.json()
 
         st.session_state.messages.append(
             {
-                "role": "assistant",
-                "content": data["response"]
+                "role":"user",
+                "content":text
             }
         )
 
+
+
+        answer = process_chat(text)
+
+
+
+        st.session_state.messages.append(
+            {
+                "role":"assistant",
+                "content":answer
+            }
+        )
+
+
+        st.session_state.voice_key += 1
+
+
         st.rerun()
 
-    else:
+
+
+    except Exception as e:
+
+
         st.error(
-            f"Backend Error {response.status_code}: {response.text}"
+            f"Voice Error: {e}"
+        )
+
+
+
+    finally:
+
+
+        if os.path.exists(filename):
+
+            os.remove(filename)
+
+
+
+
+
+# =====================================================
+# TEXT CHAT
+# =====================================================
+
+
+prompt = st.chat_input(
+    "Ask me anything..."
+)
+
+
+
+if prompt:
+
+
+    st.session_state.messages.append(
+        {
+            "role":"user",
+            "content":prompt
+        }
+    )
+
+
+    try:
+
+
+        answer = process_chat(prompt)
+
+
+        st.session_state.messages.append(
+            {
+                "role":"assistant",
+                "content":answer
+            }
+        )
+
+
+        st.rerun()
+
+
+
+    except Exception as e:
+
+
+        st.error(
+            f"Chat Error: {e}"
         )
