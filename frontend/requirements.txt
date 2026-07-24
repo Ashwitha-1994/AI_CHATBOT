@@ -1,3 +1,15 @@
 streamlit
-requests
 streamlit-mic-recorder
+
+openai-whisper
+ffmpeg-python
+
+pymongo
+python-dotenv
+
+openai
+transformers
+torch
+numpy
+scikit-learn
+requests
