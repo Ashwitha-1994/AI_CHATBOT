@@ -2,7 +2,7 @@ import requests
 import streamlit as st
 from streamlit_mic_recorder import mic_recorder
 
-API_URL = "http://127.0.0.1:8000"
+API_URL = "https://ai-chatbot-backend-ccem.onrender.com"
 
 st.set_page_config(
     page_title="AI Chatbot",
@@ -19,9 +19,21 @@ user_id = st.sidebar.text_input(
     value="1009"
 )
 
-st.sidebar.success("Backend Connected")
-st.sidebar.write(API_URL)
+try:
+    health = requests.get(
+        API_URL,
+        timeout=10
+    )
 
+    if health.status_code == 200:
+        st.sidebar.success("Backend Connected ✅")
+    else:
+        st.sidebar.error("Backend Error")
+
+except Exception:
+    st.sidebar.error("Backend Offline")
+
+st.sidebar.write(API_URL)
 st.sidebar.markdown("---")
 
 st.sidebar.info("""
@@ -88,8 +100,9 @@ if audio:
     try:
 
         voice_response = requests.post(
-            f"{API_URL}/voice",
-            files=files
+          f"{API_URL}/voice",
+          files=files,
+          timeout=120
         )
 
         if voice_response.status_code == 200:
@@ -106,12 +119,13 @@ if audio:
             )
 
             chat_response = requests.post(
-                f"{API_URL}/chat",
-                json={
-                    "user_id": user_id,
-                    "message": recognized_text
-                }
-            )
+              f"{API_URL}/chat",
+              json={
+              "user_id": user_id,
+              "message": recognized_text
+              },
+               timeout=120
+            ) 
 
             if chat_response.status_code == 200:
 
@@ -153,11 +167,12 @@ if prompt:
     )
 
     response = requests.post(
-        f"{API_URL}/chat",
-        json={
-            "user_id": user_id,
-            "message": prompt
-        }
+      f"{API_URL}/chat",
+      json={
+        "user_id": user_id,
+        "message": prompt
+      },
+      timeout=120
     )
 
     if response.status_code == 200:
@@ -174,4 +189,6 @@ if prompt:
         st.rerun()
 
     else:
-        st.error(response.text)
+        st.error(
+            f"Backend Error {response.status_code}: {response.text}"
+        )
