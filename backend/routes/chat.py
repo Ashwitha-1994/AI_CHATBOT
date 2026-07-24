@@ -1,25 +1,21 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from services.conversation_service import (
+from backend.services.conversation_service import (
     get_conversation_history,
     save_message
 )
 
-from services.memory_service import (
+from backend.services.memory_service import (
     get_memory,
     save_memory
 )
 
-from services.summary_service import summarize_conversation
-
-from services.prompt_builder import build_prompt
-
-from services.llm_service import generate_response
-
-from services.sentiment_service import analyze_sentiment
-
-from services.intent_service import detect_intent
+from backend.services.summary_service import summarize_conversation
+from backend.services.prompt_builder import build_prompt
+from backend.services.llm_service import generate_response
+from backend.services.sentiment_service import analyze_sentiment
+# from backend.services.intent_service import detect_intent   # Uncomment if using intent detection
 
 router = APIRouter()
 
@@ -32,42 +28,48 @@ class ChatRequest(BaseModel):
 @router.post("/chat")
 def chat(request: ChatRequest):
 
-    # -------------------------------
-    # Load Memory
-    # -------------------------------
+    print("\n========== NEW CHAT REQUEST ==========")
+
+    # ---------------------------------------------------
+    # Step 1 - Memory
+    # ---------------------------------------------------
+    print("Step 1: Loading Memory...")
     memory = get_memory(request.user_id)
 
-    print("\n========== MEMORY ==========")
+    print("Memory Loaded")
     print(memory)
-    print("============================\n")
 
-    # -------------------------------
-    # Conversation History
-    # -------------------------------
+    # ---------------------------------------------------
+    # Step 2 - Conversation History
+    # ---------------------------------------------------
+    print("Step 2: Loading Conversation History...")
     history = get_conversation_history(request.user_id)
 
-    # -------------------------------
-    # Sentiment Analysis
-    # -------------------------------
+    print(f"History Loaded ({len(history)} messages)")
+
+    # ---------------------------------------------------
+    # Step 3 - Sentiment
+    # ---------------------------------------------------
+    print("Step 3: Running Sentiment Analysis...")
+
     sentiment = analyze_sentiment(request.message)
 
-    print("\n========== SENTIMENT ==========")
+    print("Sentiment:")
     print(sentiment)
-    print("================================\n")
 
-    # -------------------------------
-    # Intent Detection
-    # -------------------------------
+    # ---------------------------------------------------
+    # Step 4 - Intent
+    # ---------------------------------------------------
+    # Uncomment these lines if your intent model is working
+
+    """
+    print("Step 4: Detecting Intent...")
+
     intent = detect_intent(request.message)
 
-    print("\n========== INTENT ==========")
     print(intent)
-    print("============================\n")
-    use_memory = intent["intent"] == "Personal Memory"
 
-    # -------------------------------
-    # Simple Intent Routing
-    # -------------------------------
+    use_memory = intent["intent"] == "Personal Memory"
 
     if intent["intent"] == "Greeting":
 
@@ -88,12 +90,21 @@ def chat(request: ChatRequest):
             "sentiment": sentiment["label"],
             "confidence": sentiment["score"]
         }
+    """
 
-    
+    # Temporary intent (recommended while debugging)
+    intent = {
+        "intent": "General Knowledge",
+        "score": 1.0
+    }
 
-    # -------------------------------
-    # Build Prompt
-    # -------------------------------
+    use_memory = False
+
+    # ---------------------------------------------------
+    # Step 5 - Build Prompt
+    # ---------------------------------------------------
+    print("Step 5: Building Prompt...")
+
     prompt = build_prompt(
         memory,
         history,
@@ -102,35 +113,55 @@ def chat(request: ChatRequest):
         use_memory
     )
 
-    # -------------------------------
-    # Generate AI Response
-    # -------------------------------
+    print("Prompt Built Successfully")
+
+    # ---------------------------------------------------
+    # Step 6 - LLM
+    # ---------------------------------------------------
+    print("Step 6: Calling OpenRouter LLM...")
+
     answer = generate_response(prompt)
+
+    print("LLM Returned:")
+    print(answer)
 
     if answer is None:
         answer = "Sorry, I couldn't generate a response."
 
-    # -------------------------------
-    # Save Conversation
-    # -------------------------------
+    # ---------------------------------------------------
+    # Step 7 - Save Conversation
+    # ---------------------------------------------------
+    print("Step 7: Saving Conversation...")
+
+    # Save user message
     save_message(
         request.user_id,
         "user",
         request.message
     )
 
-    save_message(
-        request.user_id,
-        "assistant",
-        answer
-    )
+    # Don't save OpenRouter/API errors
+    if answer.startswith("Error:"):
+        print("Skipping error message from conversation history.")
+    else:
+        save_message(
+            request.user_id,
+            "assistant",
+            answer
+        )
 
-    # -------------------------------
-    # Update Memory Every 10 Messages
-    # -------------------------------
+    print("Conversation Saved")
+
+    # ---------------------------------------------------
+    # Step 8 - Update Long-Term Memory
+    # ---------------------------------------------------
     updated_history = get_conversation_history(request.user_id)
 
+    print(f"Conversation Count: {len(updated_history)}")
+
     if len(updated_history) >= 10:
+
+        print("Generating Conversation Summary...")
 
         summary = summarize_conversation(updated_history)
 
@@ -140,9 +171,13 @@ def chat(request: ChatRequest):
             summary["summary"]
         )
 
-    # -------------------------------
+        print("Memory Updated Successfully")
+
+    print("========== REQUEST COMPLETED ==========\n")
+
+    # ---------------------------------------------------
     # Final Response
-    # -------------------------------
+    # ---------------------------------------------------
     return {
 
         "response": answer,

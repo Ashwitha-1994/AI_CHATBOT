@@ -1,4 +1,4 @@
-from services.intent_service import detect_intent
+from backend.services.intent_service import detect_intent
 
 print(detect_intent("Hi"))
 

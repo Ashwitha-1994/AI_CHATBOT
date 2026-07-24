@@ -1,6 +1,6 @@
 from openai import OpenAI
 
-from config import (
+from backend.config import (
     OPENROUTER_API_KEY,
     MODEL_NAME,
     TEMPERATURE,

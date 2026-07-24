@@ -1,9 +1,8 @@
 print("APP STARTED")
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes.voice import router as voice_router
-
-from routes.chat import router
+from backend.routes.voice import router as voice_router
+from backend.routes.chat import router
 
 app = FastAPI(
     title=" AI Chatbot",

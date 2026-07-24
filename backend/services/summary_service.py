@@ -1,6 +1,6 @@
 import json
 
-from services.llm_service import generate_response
+from backend.services.llm_service import generate_response
 
 
 def summarize_conversation(history):

@@ -1,7 +1,7 @@
 print("✅ Voice router loaded")
 from fastapi import APIRouter, UploadFile, File
 
-from services.whisper_service import speech_to_text
+from backend.services.whisper_service import speech_to_text
 
 router = APIRouter()
 

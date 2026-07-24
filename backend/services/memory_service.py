@@ -1,4 +1,4 @@
-from database import memory_collection
+from backend.database import memory_collection
 from datetime import datetime
 
 

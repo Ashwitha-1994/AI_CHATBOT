@@ -1,4 +1,4 @@
-from database import conversation_collection
+from backend.database import conversation_collection
 from datetime import datetime
 
 
