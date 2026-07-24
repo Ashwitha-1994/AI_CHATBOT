@@ -65,7 +65,10 @@ def chat(request: ChatRequest):
     """
     print("Step 4: Detecting Intent...")
 
-    intent = detect_intent(request.message)
+    intent = {
+    "intent": "General Knowledge",
+    "score": 1.0
+}
 
     print(intent)
 

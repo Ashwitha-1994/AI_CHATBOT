@@ -1,13 +1,28 @@
 from transformers import pipeline
 
-print("Loading Intent Model...")
 
-classifier = pipeline(
-    "zero-shot-classification",
-    model="valhalla/distilbart-mnli-12-1"
-)
+classifier = None
 
-print("Intent Model Loaded")
+
+def get_intent_model():
+
+    global classifier
+
+    if classifier is None:
+
+        print("Loading Intent Model...")
+
+        classifier = pipeline(
+            "zero-shot-classification",
+            model="typeform/distilbert-base-uncased-mnli",
+            device=-1
+        )
+
+        print("Intent Model Loaded")
+
+    return classifier
+
+
 
 INTENTS = [
     "Greeting",
@@ -21,17 +36,28 @@ INTENTS = [
 
 
 def detect_intent(message):
+
     print("Running intent detection...")
     print("Message:", message)
 
-    result = classifier(
+    model = get_intent_model()
+
+    result = model(
         message,
         candidate_labels=INTENTS
     )
 
-    print("Intent result:", result)
+    print("Intent result:")
+    print(result)
+
 
     return {
+
         "intent": result["labels"][0],
-        "score": round(result["scores"][0], 4)
+
+        "score": round(
+            result["scores"][0],
+            4
+        )
+
     }
